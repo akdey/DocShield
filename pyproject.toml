@@ -1,6 +1,6 @@
 [project]
 name = "docshield"
-version = "0.1.0"
+version = "0.2.0"
 description = "A fully offline, stateless business document anonymizer using AES-SIV encryption."
 readme = "README.md"
 authors = [
