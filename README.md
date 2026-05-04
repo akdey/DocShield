@@ -18,6 +18,17 @@ uv pip install -e .
 uv run docshield setup
 ```
 
+### Installation from ZIP / Source
+
+If you have downloaded the source code as a ZIP file:
+
+1. Unzip the folder and open a terminal inside it.
+2. Run:
+   ```bash
+   pip install .
+   docshield setup
+   ```
+
 ## Using as a Library
 
 To use DocShield in your Python code, first ensure the models are downloaded:
