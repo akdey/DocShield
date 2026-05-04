@@ -1,37 +1,50 @@
 from .detectors.base import EntitySpan
-from .detectors.regex_detector import RegexDetector
-from .detectors.presidio_detector import PresidioDetector
-from .detectors.gliner_detector import GlinerDetector
-from .detectors.keyword_detector import KeywordDetector
 from .config import config
 
 class DetectionPipeline:
     def __init__(self):
         self.detectors = []
+        self._initialized = False
         
-        # Load denylist from file
+        # Terms that are frequently misidentified by NLP models
         self.denylist = set()
         if config.denylist_path.exists():
             for line in config.denylist_path.read_text().splitlines():
                 line = line.strip()
                 if line and not line.startswith("#"):
                     self.denylist.add(line.lower())
+
+    def _lazy_init(self):
+        if self._initialized:
+            return
+            
+        import os
+        from .detectors.regex_detector import RegexDetector
+        from .detectors.presidio_detector import PresidioDetector
+        from .detectors.gliner_detector import GLiNERDetector
+        from .detectors.keyword_detector import KeywordDetector
+
+        # Suppress noisy HF logs
+        os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
+        os.environ["HF_HUB_DISABLE_IMPLICIT_TOKEN"] = "1"
         
         # 1. Keyword Detector (Highest Priority)
         if config.enable_keyword_detector:
             self.detectors.append(KeywordDetector(config.sensitive_terms_path))
-        
+            
         # 2. Regex Detector
         if config.enable_regex_detector:
             self.detectors.append(RegexDetector(config.cloud_patterns_path))
-        
-        # 3. Presidio
+            
+        # 3. Presidio Detector (PII)
         if config.enable_presidio_detector:
-            self.detectors.append(PresidioDetector())
-        
-        # 4. GLiNER
+            self.detectors.append(PresidioDetector(config.spacy_model))
+            
+        # 4. GLiNER Detector (Smart NER)
         if config.enable_gliner_detector:
-            self.detectors.append(GlinerDetector(config.gliner_model))
+            self.detectors.append(GLiNERDetector(config.gliner_model))
+            
+        self._initialized = True
             
     def _deduplicate_spans(self, spans: list[EntitySpan]) -> list[EntitySpan]:
         """
@@ -68,6 +81,7 @@ class DetectionPipeline:
         return deduped
 
     def run(self, text: str) -> list[EntitySpan]:
+        self._lazy_init()
         all_spans = []
         for detector in self.detectors:
             try:

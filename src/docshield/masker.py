@@ -25,6 +25,11 @@ class Masker:
             "AWS_S3_BUCKET_URI": "S",
             "AWS_SUBNET_ID": "U",
             "GENERIC_IPV4": "I",
+            "SERVICE_ACCOUNT": "K",
+            "API_KEY": "X",
+            "INTERNAL_ID": "D",
+            "CONTRACT": "C",
+            "PROJECT_NAME": "J",
         }
 
         # Sort backwards

@@ -1,6 +1,6 @@
 from .base import BaseDetector, EntitySpan
 
-class GlinerDetector(BaseDetector):
+class GLiNERDetector(BaseDetector):
     def __init__(self, model_name: str = "urchade/gliner_medium-v2.1", labels: list[str] = None):
         try:
             from gliner import GLiNER

@@ -12,7 +12,7 @@ class DocShieldConfig(BaseSettings):
     enable_keyword_detector: bool = Field(default=True, description="Enable flashtext keyword detection")
     enable_regex_detector: bool = Field(default=True, description="Enable cloud/generic regex detection")
     enable_presidio_detector: bool = Field(default=True, description="Enable Microsoft Presidio PII detection")
-    enable_gliner_detector: bool = Field(default=False, description="Enable GLiNER for zero-shot NER")
+    enable_gliner_detector: bool = Field(default=True, description="Enable GLiNER for zero-shot NER")
     
     # Gliner model path
     # Small model (~611MB): urchade/gliner_small-v2.1
