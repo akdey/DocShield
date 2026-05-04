@@ -23,6 +23,24 @@ class DocShield:
         self.masker = Masker(self.crypto)
         self.deanonymizer = Deanonymizer(self.crypto)
 
+    @staticmethod
+    def download_models():
+        """
+        Downloads the required NLP models (SpaCy, etc.) needed for DocShield.
+        """
+        import spacy
+        from .config import config
+        
+        model_name = config.spacy_model
+        if not spacy.util.is_package(model_name):
+            print(f"Downloading SpaCy model: {model_name}...")
+            spacy.cli.download(model_name)
+            print("Download complete.")
+        else:
+            print(f"SpaCy model {model_name} is already installed.")
+        
+        print("\nNote: GLiNER models will be downloaded automatically upon first use.")
+
     def scan(self, text: str) -> list[EntitySpan]:
         """
         Scan text for sensitive entities.

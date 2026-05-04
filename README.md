@@ -15,7 +15,21 @@ DocShield uses a modular, plug-and-play detection stack:
 
 ```bash
 uv pip install -e .
-uv run python -m spacy download en_core_web_lg
+uv run docshield setup
+```
+
+## Using as a Library
+
+To use DocShield in your Python code, first ensure the models are downloaded:
+
+```python
+from docshield import DocShield
+
+# One-time setup to download models
+DocShield.download_models()
+
+# Use the library
+ds = DocShield(key="your-key")
 ```
 
 ## How to Use (Stateless Mode)

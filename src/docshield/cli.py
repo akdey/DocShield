@@ -94,6 +94,11 @@ def deanonymize(
     console.print(f"Recovered output saved to [bold]{output_path}[/bold]")
 
 @app.command()
+def setup():
+    """Download required NLP models for DocShield."""
+    DocShield.download_models()
+
+@app.command()
 def new_key():
     """Generate a random key and save it to .docshield.key."""
     from cryptography.fernet import Fernet
