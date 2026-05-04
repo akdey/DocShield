@@ -39,3 +39,57 @@ class DocShieldCrypto:
             return decrypted.decode()
         except Exception:
             return None
+
+    def fpe_encrypt(self, plaintext: str) -> str:
+        """
+        Format Preserving Encryption: Scrambles text while keeping length and type.
+        (Letters stay letters, numbers stay numbers).
+        """
+        import string
+        import hmac
+        import hashlib
+        
+        # We create a mapping for each character class
+        classes = [string.ascii_lowercase, string.ascii_uppercase, string.digits]
+        
+        result = []
+        for char in plaintext:
+            found = False
+            for cls in classes:
+                if char in cls:
+                    # A keyed shuffle is better.
+                    shuffled = self._get_keyed_shuffle(cls)
+                    result.append(shuffled[cls.index(char)])
+                    found = True
+                    break
+            if not found:
+                result.append(char)
+        return "".join(result)
+
+    def fpe_decrypt(self, ciphertext: str) -> str:
+        import string
+        classes = [string.ascii_lowercase, string.ascii_uppercase, string.digits]
+        
+        result = []
+        for char in ciphertext:
+            found = False
+            for cls in classes:
+                shuffled = self._get_keyed_shuffle(cls)
+                if char in shuffled:
+                    result.append(cls[shuffled.index(char)])
+                    found = True
+                    break
+            if not found:
+                result.append(char)
+        return "".join(result)
+
+    def _get_keyed_shuffle(self, alphabet: str) -> str:
+        """Generates a deterministic shuffle of an alphabet based on the key."""
+        import hashlib
+        import random
+        # Seed random with the hash of (key + alphabet)
+        seed = hashlib.sha256(self.key + alphabet.encode()).digest()
+        rng = random.Random(seed)
+        chars = list(alphabet)
+        rng.shuffle(chars)
+        return "".join(chars)
