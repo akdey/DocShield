@@ -1,0 +1,10 @@
+# Terms in this list will NEVER be masked, even if detected as sensitive.
+# One term per line. Case-insensitive.
+
+Project Overview
+Table of Contents
+Executive Summary
+Confidentiality Notice
+Internal Use Only
+Draft
+Approved

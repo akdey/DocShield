@@ -5,28 +5,11 @@ from rich.table import Table
 import os
 
 from .config import config
-from .crypto import DocShieldCrypto
-from .pipeline import DetectionPipeline
-from .masker import Masker
-from .deanonymizer import Deanonymizer
-
-from .parsers.txt_parser import TxtParser
-from .parsers.word_parser import WordParser
-from .parsers.pdf_parser import PdfParser
+from . import DocShield, get_parser
 
 app = typer.Typer(help="DocShield - Business Document Anonymizer (Offline & Stateless)")
 console = Console()
 
-def get_parser(file_path: Path):
-    suffix = file_path.suffix.lower()
-    if suffix == ".txt":
-        return TxtParser()
-    elif suffix == ".docx":
-        return WordParser()
-    elif suffix == ".pdf":
-        return PdfParser()
-    else:
-        raise ValueError(f"Unsupported file type: {suffix}")
 
 def resolve_vault_key(key: str = typer.Option(None, "--key", "-k", help="Encryption key")) -> str:
     # 1. CLI Arg
@@ -60,9 +43,9 @@ def scan(
     with console.status(f"Parsing {file_path.name}..."):
         doc = parser.read(file_path)
         
-    with console.status(f"Scanning {len(doc.text)} characters for sensitive data..."):
-        pipeline = DetectionPipeline()
-        spans = pipeline.run(doc.text)
+    with console.status(f"Scanning {file_path.name}..."):
+        ds = DocShield(key="dummy") # Key not needed for scan
+        spans = ds.scan(doc.text)
         
     table = Table("Entity Type", "Text", "Start", "End", "Source")
     for span in spans:
@@ -83,22 +66,11 @@ def anonymize(
         raise typer.Exit(1)
         
     encryption_key = resolve_vault_key(key)
-    crypto = DocShieldCrypto(encryption_key)
-    masker = Masker(crypto)
-    pipeline = DetectionPipeline()
-    parser = get_parser(input_path)
-    
-    with console.status("Parsing document..."):
-        doc = parser.read(input_path)
+    ds = DocShield(encryption_key)
+    with console.status("Processing..."):
+        count = ds.anonymize_file(input_path, output_path)
         
-    with console.status("Detecting sensitive entities..."):
-        spans = pipeline.run(doc.text)
-        
-    with console.status("Masking (Stateless)..."):
-        masked_text = masker.mask(doc.text, spans)
-        parser.write_masked(input_path, output_path, masked_text, [])
-        
-    console.print(f"[green]Successfully masked {len(spans)} entities.[/green]")
+    console.print(f"[green]Successfully masked {count} entities.[/green]")
     console.print(f"Stateless masked output saved to [bold]{output_path}[/bold]")
 
 @app.command()
@@ -113,16 +85,10 @@ def deanonymize(
         raise typer.Exit(1)
         
     encryption_key = resolve_vault_key(key)
-    crypto = DocShieldCrypto(encryption_key)
-    deanonymizer = Deanonymizer(crypto)
-    parser = get_parser(input_path)
+    ds = DocShield(encryption_key)
     
-    with console.status("Parsing masked document..."):
-        doc = parser.read(input_path)
-        
-    with console.status("Decrypting from tokens..."):
-        recovered_text = deanonymizer.deanonymize(doc.text)
-        parser.write_masked(input_path, output_path, recovered_text, [])
+    with console.status("Decrypting..."):
+        ds.deanonymize_file(input_path, output_path)
         
     console.print(f"[green]Successfully deanonymized document.[/green]")
     console.print(f"Recovered output saved to [bold]{output_path}[/bold]")

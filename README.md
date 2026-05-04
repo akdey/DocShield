@@ -37,13 +37,67 @@ DocShield uses **AES-SIV** (Deterministic Encryption). The original text is encr
 ```bash
 uv run docshield anonymize my_document.docx --output masked.docx --key "my-secret-passphrase"
 ```
-*No vault file is needed!*
 
 ### 3. De-anonymizing a Document
 The program extracts the encrypted blobs from the document and restores the original text using your key.
 
 ```bash
 uv run docshield deanonymize masked.docx --output recovered.docx --key "my-secret-passphrase"
+```
+
+## Using as a Library
+
+You can integrate DocShield directly into your Python applications.
+
+### Basic Text Anonymization
+
+```python
+from docshield import DocShield
+
+# 1. Initialize with your secret key
+ds = DocShield(key="super-secret-key")
+
+# 2. Anonymize raw text (Stateless)
+text = "Contact amit@example.com for Project DocShield."
+masked = ds.anonymize(text)
+print(f"Masked: {masked}")
+# Masked: Contact <<EMAIL:encrypted_blob>> for Project <<PROJECT:encrypted_blob>>.
+
+# 3. Recover original text
+original = ds.deanonymize(masked)
+print(f"Recovered: {original}")
+```
+
+### Anonymizing Files
+
+You can also process entire documents (`.docx`, `.pdf`, `.txt`):
+
+```python
+from docshield import DocShield
+
+ds = DocShield(key="secret-key")
+
+# Anonymize a Word document
+ds.anonymize_file("confidential.docx", "masked.docx")
+
+# Recover the original file
+ds.deanonymize_file("masked.docx", "restored.docx")
+```
+
+### Advanced Usage (Custom Pipeline)
+
+If you want more control, you can use the internal components:
+
+```python
+from docshield import DetectionPipeline, Masker, DocShieldCrypto
+
+crypto = DocShieldCrypto("my-key")
+pipeline = DetectionPipeline()
+masker = Masker(crypto)
+
+text = "This is a secret."
+spans = pipeline.run(text)
+masked = masker.mask(text, spans)
 ```
 
 ## Configuring Detectors
@@ -56,6 +110,14 @@ Tweak behavior via environment variables:
 | **Regex Detector** | `DOCSHIELD_ENABLE_REGEX_DETECTOR` | `true` |
 | **Presidio (PII)** | `DOCSHIELD_ENABLE_PRESIDIO_DETECTOR` | `true` |
 | **GLiNER (Smart NER)** | `DOCSHIELD_ENABLE_GLINER_DETECTOR` | `false` |
+
+### Avoiding False Positives (Denylist)
+
+If DocShield is masking terms that are not sensitive (like "Project Overview" or "Table of Contents"), you can add them to the **Denylist**.
+
+1. Open `rules/denylist.txt`.
+2. Add the terms you want to skip (one per line).
+3. These terms will be explicitly ignored by all detectors.
 
 ---
 

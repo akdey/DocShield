@@ -1,1 +1,107 @@
 # DocShield - Business Document Anonymizer
+from pathlib import Path
+from .pipeline import DetectionPipeline
+from .masker import Masker
+from .deanonymizer import Deanonymizer
+from .crypto import DocShieldCrypto
+from .detectors.base import EntitySpan
+from .parsers import get_parser
+
+class DocShield:
+    """
+    High-level facade for DocShield library usage.
+    """
+    def __init__(self, key: str):
+        """
+        Initialize DocShield with an encryption key.
+        
+        Args:
+            key (str): The passphrase used for AES-SIV deterministic encryption.
+        """
+        self.crypto = DocShieldCrypto(key)
+        self.pipeline = DetectionPipeline()
+        self.masker = Masker(self.crypto)
+        self.deanonymizer = Deanonymizer(self.crypto)
+
+    def scan(self, text: str) -> list[EntitySpan]:
+        """
+        Scan text for sensitive entities.
+        
+        Args:
+            text (str): The text to scan.
+            
+        Returns:
+            list[EntitySpan]: A list of detected entity spans.
+        """
+        return self.pipeline.run(text)
+
+    def anonymize(self, text: str) -> str:
+        """
+        Detect and mask sensitive entities in text using stateless tokens.
+        
+        Args:
+            text (str): The text to anonymize.
+            
+        Returns:
+            str: The masked text with embedded encrypted tokens.
+        """
+        spans = self.scan(text)
+        return self.masker.mask(text, spans)
+
+    def deanonymize(self, text: str) -> str:
+        """
+        Recover original text from a masked string containing DocShield tokens.
+        
+        Args:
+            text (str): The masked text.
+            
+        Returns:
+            str: The recovered original text.
+        """
+        return self.deanonymizer.deanonymize(text)
+
+    def anonymize_file(self, input_path: str | Path, output_path: str | Path) -> int:
+        """
+        Read a file, anonymize its contents, and save to a new file.
+        
+        Args:
+            input_path (str | Path): Path to the original document.
+            output_path (str | Path): Path to save the masked document.
+            
+        Returns:
+            int: The number of entities masked.
+        """
+        input_path = Path(input_path)
+        output_path = Path(output_path)
+        parser = get_parser(input_path)
+        
+        doc = parser.read(input_path)
+        spans = self.scan(doc.text)
+        masked_text = self.masker.mask(doc.text, spans)
+        parser.write_masked(input_path, output_path, masked_text, [])
+        return len(spans)
+
+    def deanonymize_file(self, input_path: str | Path, output_path: str | Path) -> None:
+        """
+        Read a masked file, recover its original contents, and save to a new file.
+        
+        Args:
+            input_path (str | Path): Path to the masked document.
+            output_path (str | Path): Path to save the recovered document.
+        """
+        input_path = Path(input_path)
+        output_path = Path(output_path)
+        parser = get_parser(input_path)
+        
+        doc = parser.read(input_path)
+        recovered_text = self.deanonymize(doc.text)
+        parser.write_masked(input_path, output_path, recovered_text, [])
+
+__all__ = [
+    "DocShield",
+    "DetectionPipeline",
+    "Masker",
+    "Deanonymizer",
+    "DocShieldCrypto",
+    "EntitySpan",
+]

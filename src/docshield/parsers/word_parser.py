@@ -33,15 +33,21 @@ class WordParser(BaseParser):
         # This destroys inline formatting (like bolding part of a word).
         # A more robust approach requires applying regex to runs, but that's complex.
         
-        # We will split the fully masked text back into paragraphs.
-        masked_paragraphs = text.split("\n")
+        # We will split the fully masked text back into lines.
+        masked_lines = text.split("\n")
         
+        line_idx = 0
         # Replace the text of each paragraph
-        for i, para in enumerate(doc.paragraphs):
-            if i < len(masked_paragraphs):
-                # We clear runs and add the new masked text to preserve the paragraph style
-                if para.text.strip():
-                    para.text = masked_paragraphs[i]
+        for para in doc.paragraphs:
+            # How many internal newlines did this paragraph have?
+            # We must use the same number of lines from our split list.
+            num_internal_newlines = para.text.count("\n")
+            
+            if line_idx < len(masked_lines):
+                # Slice the required number of lines
+                para_lines = masked_lines[line_idx : line_idx + num_internal_newlines + 1]
+                para.text = "\n".join(para_lines)
+                line_idx += num_internal_newlines + 1
                     
         output_path.parent.mkdir(parents=True, exist_ok=True)
         doc.save(output_path)

@@ -12,10 +12,10 @@ class DocShieldConfig(BaseSettings):
     enable_keyword_detector: bool = Field(default=True, description="Enable flashtext keyword detection")
     enable_regex_detector: bool = Field(default=True, description="Enable cloud/generic regex detection")
     enable_presidio_detector: bool = Field(default=True, description="Enable Microsoft Presidio PII detection")
-    enable_gliner_detector: bool = Field(default=True, description="Enable GLiNER for zero-shot NER")
+    enable_gliner_detector: bool = Field(default=False, description="Enable GLiNER for zero-shot NER")
     
     # Gliner model path
-    # Small model (~160MB): urchade/gliner_small-v2.1
+    # Small model (~611MB): urchade/gliner_small-v2.1
     # Medium model (~1.5GB): urchade/gliner_medium-v2.1
     gliner_model: str = Field(default="urchade/gliner_small-v2.1")
     
@@ -30,6 +30,11 @@ class DocShieldConfig(BaseSettings):
     # Custom sensitive terms (CSV: term, category)
     sensitive_terms_path: Path = Field(
         default=Path(__file__).parent.parent.parent / "rules" / "sensitive_terms.csv"
+    )
+
+    # Terms to explicitly skip (one per line)
+    denylist_path: Path = Field(
+        default=Path(__file__).parent.parent.parent / "rules" / "denylist.txt"
     )
 
 config = DocShieldConfig()

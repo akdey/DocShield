@@ -9,6 +9,14 @@ class DetectionPipeline:
     def __init__(self):
         self.detectors = []
         
+        # Load denylist from file
+        self.denylist = set()
+        if config.denylist_path.exists():
+            for line in config.denylist_path.read_text().splitlines():
+                line = line.strip()
+                if line and not line.startswith("#"):
+                    self.denylist.add(line.lower())
+        
         # 1. Keyword Detector (Highest Priority)
         if config.enable_keyword_detector:
             self.detectors.append(KeywordDetector(config.sensitive_terms_path))
@@ -67,4 +75,10 @@ class DetectionPipeline:
             except Exception as e:
                 print(f"Detector {detector.__class__.__name__} failed: {e}")
                 
-        return self._deduplicate_spans(all_spans)
+        # Apply denylist
+        filtered_spans = [
+            span for span in all_spans 
+            if span.text.strip().lower() not in self.denylist
+        ]
+                
+        return self._deduplicate_spans(filtered_spans)
