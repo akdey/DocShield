@@ -148,6 +148,25 @@ You can package DocShield into a portable, standalone executable (e.g., `.exe` f
 
 You can now zip the `dist/docshield/` folder and share it. Anyone can extract it and run `docshield.exe` immediately without Admin rights or internet access!
 
+### Running the Executable
+
+Because DocShield is a command-line tool, you run it from the Command Prompt (or PowerShell). You do not double-click the `.exe`. 
+
+Open your Command Prompt, navigate to the folder where you extracted DocShield, and run:
+
+```cmd
+docshield.exe anonymize C:\Users\John\Documents\Confidential\
+```
+
+To recover the documents:
+
+```cmd
+docshield.exe deanonymize C:\Users\John\Documents\Confidential\vibrant-phoenix_output\
+```
+
+> [!TIP]
+> **Pro-Tip:** If you add the extracted `dist/docshield/` folder to your Windows **PATH Environment Variable**, your team can open a terminal in *any* folder on their computer and simply type `docshield.exe` without having to be in the same folder as the `.exe`!
+
 ---
 
 ## Appendix: Alternate Thoughts & Evolution
