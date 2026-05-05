@@ -23,12 +23,14 @@ class DocShieldConfig(BaseSettings):
     enable_gliner_detector: bool = Field(default=True, description="Enable GLiNER for zero-shot NER")
     
     # Gliner model path
-    # Small model (~611MB): urchade/gliner_small-v2.1
-    # Medium model (~1.5GB): urchade/gliner_medium-v2.1
-    gliner_model: str = Field(default="urchade/gliner_small-v2.1")
+    gliner_model: str = Field(
+        default_factory=lambda: str(get_base_path() / "models" / "gliner_model") if getattr(sys, 'frozen', False) else "urchade/gliner_small-v2.1"
+    )
     
     # Spacy model
-    spacy_model: str = Field(default="en_core_web_lg")
+    spacy_model: str = Field(
+        default_factory=lambda: str(get_base_path() / "models" / "spacy_model") if getattr(sys, 'frozen', False) else "en_core_web_lg"
+    )
 
     # Cloud regex patterns file path
     cloud_patterns_path: Path = Field(
