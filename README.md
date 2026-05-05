@@ -42,39 +42,60 @@ DocShield.download_models()
 ds = DocShield(key="your-key")
 ```
 
-## How to Use (Stateless Mode)
+## Hands-free Team Workflow (Recommended)
 
-> [!TIP]
-> Always prefix commands with `uv run` to ensure you are using the project's virtual environment.
+DocShield now supports a **Session Gateway** mode. This is the easiest way for teams to work together without sharing passwords or managing complex keys.
 
-### 1. Scanning a Document (Audit Mode)
-See what entities DocShield detects without actually altering the document.
-
-```bash
-uv run docshield scan my_document.docx
-```
-*Supported formats: `.txt`, `.docx`, `.pdf`*
-
-### 2. Anonymizing a Document
-DocShield uses **Compact FPE Mode** by default. Original text is scrambled into a token of the same length: `[T:scrambled]`.
+### 1. Anonymizing a Folder or File
+When you run anonymize without a key, DocShield generates a unique, Docker-style session name (e.g., `vibrant-phoenix`) and a high-entropy 32-character key.
 
 ```bash
-uv run docshield anonymize my_document.docx --output masked.docx --key "my-secret-passphrase"
+# Anonymize all documents in a folder
+uv run docshield anonymize my_docs/
 ```
 
-### 3. De-anonymizing a Document
-The program recognizes the compact tags and "un-shuffles" the text back to its original state using your key.
+**What happens:**
+- A subfolder is created: `my_docs/vibrant-phoenix_output/`.
+- Original filenames are removed for privacy: `vibrant-phoenix_1.docx`, `vibrant-phoenix_2.pdf`.
+- A session key is saved inside: `vibrant-phoenix.key`.
 
+### 2. De-anonymizing a Session Folder
+To recover the original content, simply point DocShield at the output folder. It will automatically find the `.key` file and restore all documents.
+
+```bash
+uv run docshield deanonymize my_docs/vibrant-phoenix_output/
+```
+- Restored files are saved in: `my_docs/vibrant-phoenix_output/restored/`.
+
+---
+
+## Legacy & Manual Mode
+
+If you prefer to manage your own passphrases or need to process a single file with a specific name, use the legacy flags.
+
+### Manual Anonymization
+```bash
+uv run docshield anonymize report.docx --output masked.docx --key "my-secret-passphrase"
+```
+
+### Manual De-anonymization
 ```bash
 uv run docshield deanonymize masked.docx --output recovered.docx --key "my-secret-passphrase"
 ```
+
+### Scanning (Audit Mode)
+See what entities DocShield detects without actually altering the document.
+```bash
+uv run docshield scan my_document.docx
+```
+
+---
 
 ## Using as a Library
 
 You can integrate DocShield directly into your Python applications.
 
 ### Basic Text Anonymization
-
 ```python
 from docshield import DocShield
 
@@ -85,44 +106,9 @@ ds = DocShield(key="super-secret-key")
 text = "Contact amit@example.com for Project DocShield."
 masked = ds.anonymize(text)
 print(f"Masked: {masked}")
-# Masked: Contact [E:itbtq.x@hztdmyh.nod] for Project [P:DocShield].
 
 # 3. Recover original text
 original = ds.deanonymize(masked)
-print(f"Recovered: {original}")
-```
-
-### Anonymizing Files
-
-You can also process entire documents (`.docx`, `.pdf`, `.txt`):
-
-```python
-from docshield import DocShield
-
-ds = DocShield(key="secret-key")
-
-# Anonymize a Word document
-ds.anonymize_file("confidential.docx", "masked.docx")
-
-# Recover the original file
-ds.deanonymize_file("masked.docx", "restored.docx")
-```
-
-### Advanced Usage (Custom Pipeline)
-
-If you want more control, you can use the internal components:
-
-```python
-from docshield import DetectionPipeline, Masker, DocShieldCrypto
-
-crypto = DocShieldCrypto("my-key")
-pipeline = DetectionPipeline()
-masker = Masker(crypto)
-
-text = "This is a secret."
-spans = pipeline.run(text)
-# Use the new compact mask
-masked = masker.mask(text, spans)
 ```
 
 ## Configuring Detectors
@@ -137,12 +123,7 @@ Tweak behavior via environment variables:
 | **GLiNER (Smart NER)** | `DOCSHIELD_ENABLE_GLINER_DETECTOR` | `false` |
 
 ### Avoiding False Positives (Denylist)
-
-If DocShield is masking terms that are not sensitive (like "Project Overview" or "Table of Contents"), you can add them to the **Denylist**.
-
-1. Open `rules/denylist.txt`.
-2. Add the terms you want to skip (one per line).
-3. These terms will be explicitly ignored by all detectors.
+Add terms to `rules/denylist.txt` (one per line) to skip them.
 
 ---
 
