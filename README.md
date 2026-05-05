@@ -165,7 +165,7 @@ docshield.exe deanonymize C:\Users\John\Documents\Confidential\vibrant-phoenix_o
 ```
 
 > [!TIP]
-> **Pro-Tip:** If you add the extracted `dist/docshield/` folder to your Windows **PATH Environment Variable**, your team can open a terminal in *any* folder on their computer and simply type `docshield.exe` without having to be in the same folder as the `.exe`!
+> **Pro-Tip:** If you add the extracted `dist/docshield/` folder to your Windows **PATH Environment Variable**, you can open a terminal in *any* folder on your computer and simply type `docshield.exe` without having to be in the same folder as the `.exe`!
 
 ---
 
