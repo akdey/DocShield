@@ -2,6 +2,14 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
 from pathlib import Path
 
+import sys
+
+def get_base_path() -> Path:
+    """Get absolute path to resource, works for dev and for PyInstaller"""
+    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+        return Path(sys._MEIPASS)
+    return Path(__file__).parent.parent.parent
+
 class DocShieldConfig(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="DOCSHIELD_")
     
@@ -24,17 +32,17 @@ class DocShieldConfig(BaseSettings):
 
     # Cloud regex patterns file path
     cloud_patterns_path: Path = Field(
-        default=Path(__file__).parent.parent.parent / "rules" / "cloud_patterns.yaml"
+        default_factory=lambda: get_base_path() / "rules" / "cloud_patterns.yaml"
     )
 
     # Custom sensitive terms (CSV: term, category)
     sensitive_terms_path: Path = Field(
-        default=Path(__file__).parent.parent.parent / "rules" / "sensitive_terms.csv"
+        default_factory=lambda: get_base_path() / "rules" / "sensitive_terms.csv"
     )
 
     # Terms to explicitly skip (one per line)
     denylist_path: Path = Field(
-        default=Path(__file__).parent.parent.parent / "rules" / "denylist.txt"
+        default_factory=lambda: get_base_path() / "rules" / "denylist.txt"
     )
 
 config = DocShieldConfig()
