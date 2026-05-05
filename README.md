@@ -127,6 +127,29 @@ Add terms to `rules/denylist.txt` (one per line) to skip them.
 
 ---
 
+## Building a Standalone Executable
+
+You can package DocShield into a portable, standalone executable (e.g., `.exe` for Windows) that does NOT require Python or any setup to run.
+
+1. **Pull the latest code** on the target operating system (e.g., Windows).
+2. **Run the build script**:
+   ```bash
+   uv run build_exe.py
+   ```
+3. **Configure Portable Models**: PyInstaller will create a `dist/docshield/` folder. For the app to be truly "offline" and "plug and play", create a `models/` folder inside `dist/docshield/` and drop your downloaded models inside. The structure must look like this:
+
+   ```text
+   dist/docshield/
+   ├── docshield.exe
+   └── models/
+       ├── gliner_model/     <-- Put your downloaded Hugging Face files here
+       └── spacy_model/      <-- Extract the SpaCy .tar.gz files in here
+   ```
+
+You can now zip the `dist/docshield/` folder and share it. Anyone can extract it and run `docshield.exe` immediately without Admin rights or internet access!
+
+---
+
 ## Appendix: Alternate Thoughts & Evolution
 
 The architecture of DocShield evolved through three distinct phases to reach its current "Compact & Stateless" design.
