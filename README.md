@@ -1,4 +1,4 @@
-DocShield is a fully offline tool for detecting, masking, and de-anonymizing sensitive business data. **It is stateless**, meaning it does not require a database to track mappings. It uses **Format Preserving Encryption (FPE)** to scramble data while keeping the document layout clean and LLM-friendly.
+DocShield is a fully offline tool for detecting, masking, and de-anonymizing sensitive business data in text and images. **It is stateless**, meaning it does not require a database to track mappings. It uses **Format Preserving Encryption (FPE)** to scramble data while keeping the document layout clean, visually intact, and LLM-friendly.
 
 ## 🚀 Core Features
 
@@ -29,7 +29,8 @@ DocShield uses a modular, plug-and-play detection stack:
 2. **Microsoft Presidio**: Industry standard for PII (names, emails, etc.).
 3. **Keyword Detector**: Configured via `rules/sensitive_terms.csv`.
 4. **GLiNER (Zero-shot NER)**: Smart neural model (disabled by default).
-5. **Compact FPE Masking**: Keeps document layout intact and safe for LLMs.
+5. **EasyOCR (Image Masking)**: AI vision engine to redact text inside embedded diagrams.
+6. **Compact FPE Masking**: Keeps document layout intact and safe for LLMs.
 
 ## Installation
 
