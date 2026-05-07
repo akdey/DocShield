@@ -37,9 +37,30 @@ app = typer.Typer(
 )
 console = Console()
 
+# Global state for verbose mode
+state = {"verbose": False}
+
+@app.callback()
+def main(
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable developer mode (show all library logs)")
+):
+    """
+    DocShield CLI - Secure, offline document anonymization.
+    """
+    if verbose:
+        state["verbose"] = True
+        logging.getLogger().setLevel(logging.DEBUG)
+        for logger_name in ["transformers", "huggingface_hub", "presidio-analyzer", "spacy", "easyocr", "gliner"]:
+            logging.getLogger(logger_name).setLevel(logging.DEBUG)
+        console.print("[dim]Developer Mode: Verbose logging enabled.[/dim]")
+
 @contextlib.contextmanager
 def silence_stderr():
-    """Redirect stderr to devnull to hide unsuppressible library warnings."""
+    """Redirect stderr to devnull to hide unsuppressible library warnings, unless in verbose mode."""
+    if state["verbose"]:
+        yield sys.stderr
+        return
+        
     new_target = open(os.devnull, "w")
     old_target = sys.stderr
     sys.stderr = new_target
