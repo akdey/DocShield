@@ -1,0 +1,11 @@
+cloud subscription ID
+AWS resource name
+Azure resource group
+GCP project name
+API key
+internal hostname
+customer company name
+contract number
+employee name
+service account
+project codename

@@ -9,11 +9,26 @@ class GLiNERDetector(BaseDetector):
             self.model = None
             print("GLiNER not installed. pip install gliner")
             
-        self.labels = labels or [
+        from pathlib import Path
+        
+        # Load custom labels from rules/gliner_labels.txt
+        rules_dir = Path("rules")
+        rules_dir.mkdir(exist_ok=True)
+        labels_file = rules_dir / "gliner_labels.txt"
+        
+        default_labels = [
             "cloud subscription ID", "AWS resource name", "Azure resource group",
             "GCP project name", "API key", "internal hostname", "customer company name",
             "contract number", "employee name", "service account", "project codename"
         ]
+        
+        if labels_file.exists():
+            self.labels = [line.strip() for line in labels_file.read_text().splitlines() if line.strip()]
+            if not self.labels:
+                self.labels = default_labels
+        else:
+            labels_file.write_text("\n".join(default_labels))
+            self.labels = default_labels
 
     def detect(self, text: str) -> list[EntitySpan]:
         if not self.model or not text.strip():

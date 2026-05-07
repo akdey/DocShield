@@ -122,6 +122,9 @@ Tweak behavior via environment variables:
 | **Presidio (PII)** | `DOCSHIELD_ENABLE_PRESIDIO_DETECTOR` | `true` |
 | **GLiNER (Smart NER)** | `DOCSHIELD_ENABLE_GLINER_DETECTOR` | `false` |
 
+### Customizing GLiNER Labels
+Add or remove AI detection targets in `rules/gliner_labels.txt` (one per line). For example, add `financial projection` to detect financial forecasts automatically.
+
 ### Avoiding False Positives (Denylist)
 Add terms to `rules/denylist.txt` (one per line) to skip them.
 
