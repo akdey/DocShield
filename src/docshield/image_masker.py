@@ -49,17 +49,18 @@ class ImageMasker:
             with zipfile.ZipFile(docx_path, 'r') as zip_ref:
                 zip_ref.extractall(temp_dir)
                 
-            media_dir = temp_dir / "word" / "media"
-            if not media_dir.exists():
-                return # No images
-                
             modified_any = False
             original_images_to_save = {}
             
+            # Find all images recursively, as some generators put them in word/media/ and others in media/
+            image_extensions = {'.png', '.jpg', '.jpeg'}
+            all_images = [p for p in temp_dir.rglob("*") if p.is_file() and p.suffix.lower() in image_extensions]
+            
+            if not all_images:
+                return # No images
+            
             # 2. Process Images
-            for img_path in media_dir.glob("image*.*"):
-                if img_path.suffix.lower() not in ['.png', '.jpg', '.jpeg']:
-                    continue
+            for img_path in all_images:
                     
                 # Read image
                 img_bytes = img_path.read_bytes()
@@ -114,8 +115,9 @@ class ImageMasker:
                             img_modified = True
                             
                 if img_modified:
-                    # Save original image to dictionary for the vault backup
-                    original_images_to_save[img_path.name] = img_bytes
+                    # Save original image with its relative path to preserve structure in vault zip
+                    rel_path = img_path.relative_to(temp_dir)
+                    original_images_to_save[str(rel_path)] = img_bytes
                     
                     # Save modified image back to temp_dir
                     pil_img.save(img_path)
@@ -158,11 +160,9 @@ class ImageMasker:
             with zipfile.ZipFile(docx_path, 'r') as zip_ref:
                 zip_ref.extractall(temp_dir)
                 
-            media_dir = temp_dir / "word" / "media"
-            
-            # 2. Extract original images directly into media folder
+            # 2. Extract original images back into their relative paths within temp_dir
             with zipfile.ZipFile(images_zip_path, 'r') as img_zip:
-                img_zip.extractall(media_dir)
+                img_zip.extractall(temp_dir)
                 
             # 3. Re-zip docx
             with zipfile.ZipFile(docx_path, 'w', zipfile.ZIP_DEFLATED) as docx_zip:
