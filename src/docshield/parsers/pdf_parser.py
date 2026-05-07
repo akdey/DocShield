@@ -29,8 +29,8 @@ class PdfParser(BaseParser):
         for line in text.split("\n"):
             # Ensure text is compatible with latin-1 (default fonts in FPDF)
             safe_line = line.encode('latin-1', 'replace').decode('latin-1')
-            # Use multi_cell for wrapping text instead of cell
-            pdf.multi_cell(0, 5, text=safe_line)
+            # Use write for wrapping text which is more robust against long unbroken strings
+            pdf.write(5, text=safe_line + '\n')
             
         # Ensure output is a .pdf
         out_pdf_path = output_path.with_suffix(".pdf")
