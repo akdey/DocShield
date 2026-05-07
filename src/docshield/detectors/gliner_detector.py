@@ -4,7 +4,7 @@ class GLiNERDetector(BaseDetector):
     def __init__(self, model_name: str = "urchade/gliner_medium-v2.1", labels: list[str] = None):
         try:
             from gliner import GLiNER
-            self.model = GLiNER.from_pretrained(model_name)
+            self.model = GLiNER.from_pretrained(model_name, local_files_only=True)
         except ImportError:
             self.model = None
             print("GLiNER not installed. pip install gliner")

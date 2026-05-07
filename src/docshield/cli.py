@@ -3,7 +3,8 @@ from pathlib import Path
 from rich.console import Console
 from rich.table import Table
 import os
-
+os.environ["HF_HUB_OFFLINE"] = "1"
+os.environ["TRANSFORMERS_OFFLINE"] = "1"
 from .config import config
 from . import DocShield, get_parser
 from .sessions import SessionManager
