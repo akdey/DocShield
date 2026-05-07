@@ -78,7 +78,7 @@ class DocShieldGUI:
         self.anon_btn.state(['disabled'])
         self.deanon_btn.state(['disabled'])
         self.progress.pack(fill=tk.X, pady=5)
-        self.progress.start()
+        self.progress.start(10)
         
         threading.Thread(target=self._anonymize_thread, args=(path,), daemon=True).start()
         
@@ -95,16 +95,21 @@ class DocShieldGUI:
             
             ds = DocShield(key)
             
-            self.status_var.set(f"Anonymizing: {path_obj.name}...")
-            
+            def update_gui_status(msg):
+                self.root.after(0, lambda: self.status_var.set(msg))
+
             files = [path_obj] if path_obj.is_file() else list(path_obj.glob("*.*"))
             files = [f for f in files if f.suffix.lower() in [".docx", ".pdf", ".txt"]]
             
+            if not files:
+                raise Exception("No supported files found (.docx, .pdf, .txt)")
+
             for i, f in enumerate(files, 1):
                 dest = output_dir / f"{session_name}_{i}{f.suffix}"
-                ds.anonymize_file(f, dest)
+                update_gui_status(f"Processing {f.name}...")
+                ds.anonymize_file(f, dest, status_callback=update_gui_status)
                 
-            self.root.after(0, lambda: self._on_complete(f"Success!\n\nSession: {session_name}\nKey saved to vault folder."))
+            self.root.after(0, lambda: self._on_complete(f"Success!\n\nSession: {session_name}\nKey saved: {vault_path.name}"))
         except Exception as e:
             self.root.after(0, lambda: self._on_error(str(e)))
 
@@ -117,7 +122,7 @@ class DocShieldGUI:
         self.anon_btn.state(['disabled'])
         self.deanon_btn.state(['disabled'])
         self.progress.pack(fill=tk.X, pady=5)
-        self.progress.start()
+        self.progress.start(10)
         
         threading.Thread(target=self._deanonymize_thread, args=(path,), daemon=True).start()
 
@@ -134,17 +139,24 @@ class DocShieldGUI:
             key = SessionManager.load_session_key(key_files[0])
             ds = DocShield(key)
             
-            self.status_var.set("Restoring original documents...")
-            
+            def update_gui_status(msg):
+                self.root.after(0, lambda: self.status_var.set(msg))
+
             files = [path_obj] if path_obj.is_file() else list(path_obj.glob("*.*"))
             dest_dir = search_dir / "restored"
             dest_dir.mkdir(exist_ok=True)
             
+            processed = 0
             for f in files:
                 if f.suffix.lower() in [".docx", ".pdf", ".txt"]:
-                    ds.deanonymize_file(f, dest_dir / f"restored_{f.name}")
+                    update_gui_status(f"Restoring {f.name}...")
+                    ds.deanonymize_file(f, dest_dir / f"restored_{f.name}", status_callback=update_gui_status)
+                    processed += 1
+            
+            if processed == 0:
+                raise Exception("No masked files found to restore.")
                     
-            self.root.after(0, lambda: self._on_complete(f"Success!\n\nFiles restored to:\n{dest_dir}"))
+            self.root.after(0, lambda: self._on_complete(f"Success!\n\n{processed} files restored to:\n{dest_dir}"))
         except Exception as e:
             self.root.after(0, lambda: self._on_error(str(e)))
 

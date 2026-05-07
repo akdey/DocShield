@@ -219,9 +219,6 @@ Open your Command Prompt (or PowerShell), navigate to the folder where you extra
 docshield.exe anonymize C:\Users\John\Documents\Confidential\
 ```
 
-**Double-Click Mode (BETA):**
-If you double-click the `docshield.exe` file, it will launch a **Simple Native GUI (Experimental)**. This is a beta feature designed for users who aren't comfortable with the command line. It allows for basic file selection and key management.
-
 ```cmd
 docshield.exe anonymize C:\Users\John\Documents\Confidential\
 ```
@@ -234,6 +231,10 @@ docshield.exe deanonymize C:\Users\John\Documents\Confidential\vibrant-phoenix_o
 
 > [!TIP]
 > **Pro-Tip:** If you add the extracted `dist/docshield/` folder to your Windows **PATH Environment Variable**, you can open a terminal in *any* folder on your computer and simply type `docshield.exe` without having to be in the same folder as the `.exe`!
+
+
+**Double-Click Mode (BETA):**
+If you double-click the `docshield.exe` file, it will launch a **Simple Native GUI (Experimental)**. This is a beta feature designed for users who aren't comfortable with the command line. It allows for basic file selection and key management.
 
 ---
 
