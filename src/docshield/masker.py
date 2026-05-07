@@ -5,10 +5,10 @@ class Masker:
     def __init__(self, crypto: DocShieldCrypto):
         self.crypto = crypto
 
-    def mask_with_replacements(self, text: str, spans: list[EntitySpan]) -> tuple[str, list[tuple[int, int, str]]]:
+    def mask_with_replacements(self, text: str, spans: list[EntitySpan]) -> tuple[str, list[tuple[int, int, str, str]]]:
         """
         NEW COMPACT MODE: Replaces detected spans with FPE-scrambled text.
-        Returns the masked text AND a list of (start, end, token) replacements.
+        Returns the masked text AND a list of (start, end, original_text, masked_token) replacements.
         """
         if not spans:
             return text, []
@@ -46,7 +46,7 @@ class Masker:
             token = f"[{t}:{scrambled}]"
             
             # We store the replacement info
-            replacements.append((span.start, span.end, token))
+            replacements.append((span.start, span.end, span.text, token))
             
             masked_text = masked_text[:span.start] + token + masked_text[span.end:]
             
