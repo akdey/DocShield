@@ -35,7 +35,7 @@ class WordParser(BaseParser):
         # so earlier indices don't shift!
         replacements.sort(key=lambda x: x[0], reverse=True)
         
-        for rep_start, rep_end, _, rep_text in replacements:
+        for rep_start, rep_end, rep_text in replacements:
             # Find which paragraph this replacement belongs to
             for para, p_start, p_end in para_bounds:
                 if p_start <= rep_start < p_end:

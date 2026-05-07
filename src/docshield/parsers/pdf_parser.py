@@ -13,31 +13,26 @@ class PdfParser(BaseParser):
                     text.append(page_text)
         return ParsedDocument(original_path=path, text="\n\n".join(text))
 
-    def write_masked(self, original_path: Path, output_path: Path, text: str, replacements: list[tuple[int, int, str, str]]) -> None:
+    def write_masked(self, original_path: Path, output_path: Path, text: str, replacements: list[tuple[int, int, str]]) -> None:
         """
-        True in-place visual redaction for PDFs.
-        We use PyMuPDF (fitz) to search for the original text and draw redaction
-        annotations. This perfectly preserves the PDF's images, layout, and other text.
+        In-place redaction for PDFs is extremely difficult without exact coordinates.
+        We generate a clean new PDF containing the masked text to ensure the file type matches
+        and no hidden metadata leaks. We preserve the basic paragraph structure.
         """
-        import fitz
+        from fpdf import FPDF
         
-        doc = fitz.open(original_path)
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("Helvetica", size=11)
         
-        # Extract unique replacements to avoid redacting the same string twice
-        # replacements is [(start, end, text_to_replace, new_text)]
-        unique_reps = {}
-        for _, _, orig, token in replacements:
-            unique_reps[orig] = token
+        # Split text into lines to preserve some basic structure
+        for line in text.split("\n"):
+            # Ensure text is compatible with latin-1 (default fonts in FPDF)
+            safe_line = line.encode('latin-1', 'replace').decode('latin-1')
+            # Use write for wrapping text which is more robust against long unbroken strings
+            pdf.write(5, text=safe_line + '\n')
             
-        for page in doc:
-            for orig, token in unique_reps.items():
-                rects = page.search_for(orig)
-                for rect in rects:
-                    # Draw a white box over the old text and write the token
-                    page.add_redact_annot(rect, text=token, fill=(1, 1, 1), text_color=(0, 0, 0), cross_out=False)
-                    
-            # Apply all redactions for this page
-            page.apply_redactions()
-            
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        doc.save(str(output_path))
+        # Ensure output is a .pdf
+        out_pdf_path = output_path.with_suffix(".pdf")
+        out_pdf_path.parent.mkdir(parents=True, exist_ok=True)
+        pdf.output(str(out_pdf_path))

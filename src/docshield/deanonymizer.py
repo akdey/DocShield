@@ -9,10 +9,10 @@ class Deanonymizer:
         # 2. Regex for new format: [T:DATA]
         self.compact_pattern = re.compile(r"\[([A-Z0-9_]+):([^\]]+)\]")
 
-    def deanonymize_with_replacements(self, text: str) -> tuple[str, list[tuple[int, int, str, str]]]:
+    def deanonymize_with_replacements(self, text: str) -> tuple[str, list[tuple[int, int, str]]]:
         """
         Restores text from masked formats and returns the recovered text
-        along with a list of (start, end, masked_token, recovered_text) replacements.
+        along with a list of (start, end, recovered_text) replacements.
         """
         matches = list(self.old_pattern.finditer(text)) + list(self.compact_pattern.finditer(text))
         matches.sort(key=lambda m: m.start(), reverse=True)
@@ -27,7 +27,7 @@ class Deanonymizer:
                 original = self._replace_compact(match)
                 
             if original != match.group(0):
-                replacements.append((match.start(), match.end(), match.group(0), original))
+                replacements.append((match.start(), match.end(), original))
                 recovered_text = recovered_text[:match.start()] + original + recovered_text[match.end():]
                 
         return recovered_text, replacements
