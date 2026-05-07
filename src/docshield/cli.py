@@ -33,7 +33,7 @@ from .sessions import SessionManager
 app = typer.Typer(
     help="DocShield - Business Document Anonymizer (Offline & Stateless)",
     rich_markup_mode="rich",
-    no_args_is_help=True
+    no_args_is_help=False # We handle no args manually for GUI support
 )
 console = Console()
 
@@ -49,13 +49,31 @@ def set_verbose(enabled: bool):
             logging.getLogger(logger_name).setLevel(logging.DEBUG)
         console.print("[dim]Developer Mode: Verbose logging enabled.[/dim]")
 
-@app.callback()
+@app.callback(invoke_without_command=True)
 def main(
+    ctx: typer.Context,
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable developer mode (show all library logs)")
 ):
     """
     DocShield CLI - Secure, offline document anonymization.
     """
+    # If no subcommand is provided, launch GUI
+    if ctx.invoked_subcommand is None:
+        if len(sys.argv) == 1:
+            try:
+                from .gui import launch_gui
+                launch_gui()
+                return
+            except Exception as e:
+                # Fallback to help if GUI fails (e.g. headless)
+                console.print(f"[dim]Note: GUI could not be launched ({e}). Showing help instead.[/dim]")
+                console.print(ctx.get_help())
+                raise typer.Exit()
+        else:
+            # User might have just passed --verbose but no command
+            console.print(ctx.get_help())
+            raise typer.Exit()
+
     set_verbose(verbose)
 
 @contextlib.contextmanager

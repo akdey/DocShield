@@ -210,9 +210,11 @@ You can now zip the `dist/docshield/` folder and share it. Anyone can extract it
 
 ### Running the Executable
 
-Because DocShield is a command-line tool, you run it from the Command Prompt (or PowerShell). You do not double-click the `.exe`. 
+**Double-Click Mode (NEW!):**
+If you double-click the `docshield.exe` file, it will automatically launch a **Simple Native GUI**. This is perfect for users who aren't comfortable with the command line. It allows you to select files, folders, and keys with a single click.
 
-Open your Command Prompt, navigate to the folder where you extracted DocShield, and run:
+**Command-Line Mode:**
+Because DocShield is also a power-user tool, you can run it from the Command Prompt (or PowerShell) to use the advanced features, globs, and session management.
 
 ```cmd
 docshield.exe anonymize C:\Users\John\Documents\Confidential\
