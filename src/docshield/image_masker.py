@@ -79,10 +79,10 @@ class ImageMasker:
                     
                 # We have sensitive data! Generate replacements
                 _, replacements = docshield_instance.masker.mask_with_replacements(full_text, spans)
-                # replacements: [(start, end, original_text, token)]
+                # replacements: [(start, end, token)]
                 
                 # Map original text to tokens
-                target_strings = {orig: token for _, _, orig, token in replacements}
+                target_strings = {full_text[start:end]: token for start, end, token in replacements}
                 
                 # We need to draw on the image
                 pil_img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
