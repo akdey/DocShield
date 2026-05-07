@@ -91,27 +91,49 @@ uv run docshield deanonymize my_docs/vibrant-phoenix_output/
 
 ---
 
-## Legacy & Manual Mode
+---
 
-If you prefer to manage your own passphrases or need to process a single file with a specific name, use the legacy flags.
+## CLI Usage & Shorthands
 
-### Manual Anonymization
+DocShield provides a high-performance CLI with shorthands for power users and a **Developer Mode** for deep auditing.
+
+### 1. Command Shorthands
+You can use single-letter commands for any operation:
+- **`a`** instead of `anonymize`
+- **`s`** instead of `scan`
+- **`d`** instead of `deanonymize`
+
+### 2. Developer Mode (`--verbose` / `-v`)
+By default, DocShield is silent and only shows beautiful progress bars. To see all underlying library logs, AI model initialization, and warnings, use the verbose flag:
 ```bash
-uv run docshield anonymize report.docx --output masked.docx --key "my-secret-passphrase"
+uv run docshield -v s Architecture_BRD.docx
 ```
 
-### Manual De-anonymization
-```bash
-uv run docshield deanonymize masked.docx --output recovered.docx --key "my-secret-passphrase"
-```
+---
+
+## 🛠️ Operational Modes
 
 ### Scanning (Audit Mode)
 See what entities DocShield detects without actually altering the document.
 ```bash
-uv run docshield scan my_document.docx
+# Standard
+uv run docshield scan report.docx
+
+# Shorthand
+uv run docshield s report.docx
 ```
 
----
+### Manual Anonymization
+If you prefer to manage your own passphrases or need to process a single file with a specific name.
+```bash
+# Using shorthands and -k for key
+uv run docshield a report.docx -o masked.docx -k "my-secret-passphrase"
+```
+
+### Manual De-anonymization
+```bash
+uv run docshield d masked.docx -o recovered.docx -k "my-secret-passphrase"
+```
 
 ## Using as a Library
 
