@@ -21,7 +21,7 @@ class DocShieldConfig(BaseSettings):
     enable_regex_detector: bool = Field(default=True, description="Enable cloud/generic regex detection")
     enable_presidio_detector: bool = Field(default=True, description="Enable Microsoft Presidio PII detection")
     enable_gliner_detector: bool = Field(default=True, description="Enable GLiNER for zero-shot NER")
-    
+    enable_image_masking: bool = Field(default=False, description="Enable OCR-based image redaction (heavy dependency)")    
     # Gliner model path
     gliner_model: str = Field(
         default_factory=lambda: str(get_base_path() / "models" / "gliner_model") if getattr(sys, 'frozen', False) else "urchade/gliner_small-v2.1"

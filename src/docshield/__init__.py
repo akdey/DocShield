@@ -97,6 +97,16 @@ class DocShield:
         spans = self.scan(doc.text)
         masked_text, replacements = self.masker.mask_with_replacements(doc.text, spans)
         parser.write_masked(input_path, output_path, masked_text, replacements)
+        
+        from .config import config
+        if config.enable_image_masking:
+            from .image_masker import ImageMasker
+            im = ImageMasker()
+            # If input was PDF, output is actually .docx
+            final_output = output_path.with_suffix(".docx") if input_path.suffix.lower() == ".pdf" else output_path
+            if final_output.suffix.lower() == ".docx":
+                im.anonymize_docx_images(final_output, self, final_output.parent)
+                
         return len(spans)
 
     def deanonymize_file(self, input_path: str | Path, output_path: str | Path) -> None:
@@ -114,6 +124,13 @@ class DocShield:
         doc = parser.read(input_path)
         recovered_text, replacements = self.deanonymizer.deanonymize_with_replacements(doc.text)
         parser.write_masked(input_path, output_path, recovered_text, replacements)
+        
+        from .config import config
+        if config.enable_image_masking:
+            from .image_masker import ImageMasker
+            im = ImageMasker()
+            if output_path.suffix.lower() == ".docx":
+                im.deanonymize_docx_images(output_path, input_path.parent)
 
 __all__ = [
     "DocShield",

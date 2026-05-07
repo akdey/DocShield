@@ -17,12 +17,15 @@ classifiers = [
 requires-python = ">=3.11"
 dependencies = [
     "cryptography>=47.0.0",
+    "easyocr>=1.7.2",
     "flashtext>=2.7",
     "fpdf2>=2.8.7",
     "gliner>=0.2.26",
     "loguru>=0.7.3",
+    "opencv-python-headless>=4.13.0.92",
     "pdf2docx>=0.5.13",
     "pdfplumber>=0.11.9",
+    "pillow>=12.2.0",
     "presidio-analyzer>=2.2.362",
     "presidio-anonymizer>=2.2.362",
     "pydantic>=2.13.3",

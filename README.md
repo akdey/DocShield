@@ -121,6 +121,7 @@ Tweak behavior via environment variables:
 | **Regex Detector** | `DOCSHIELD_ENABLE_REGEX_DETECTOR` | `true` |
 | **Presidio (PII)** | `DOCSHIELD_ENABLE_PRESIDIO_DETECTOR` | `true` |
 | **GLiNER (Smart NER)** | `DOCSHIELD_ENABLE_GLINER_DETECTOR` | `false` |
+| **Image Masking (OCR)** | `DOCSHIELD_ENABLE_IMAGE_MASKING` | `false` |
 
 ### Customizing GLiNER Labels
 Add or remove AI detection targets in `rules/gliner_labels.txt` (one per line). For example, add `financial projection` to detect financial forecasts automatically.
