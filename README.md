@@ -1,5 +1,26 @@
 DocShield is a fully offline tool for detecting, masking, and de-anonymizing sensitive business data. **It is stateless**, meaning it does not require a database to track mappings. It uses **Format Preserving Encryption (FPE)** to scramble data while keeping the document layout clean and LLM-friendly.
 
+## 🚀 Core Features
+
+- **Format Preserving**: Accurately maintains Word document formatting (bold, italics, tables) during redaction using a precise, run-aware parser.
+- **Image & Diagram Masking**: (Opt-in) Scans images within documents using AI-based OCR, paints redaction boxes over sensitive text inside the diagrams, and perfectly restores them upon deanonymization.
+- **Stateless Architecture**: No external databases required. The entire session state is securely packed into a single `.key` vault file.
+- **Robust Encryption**: Uses Format-Preserving Encryption (FPE) and AES-SIV for deterministic, highly secure data masking.
+- **Zero-Shot NER**: Integrates GLiNER to detect arbitrary business entities (like project names or cloud resources) without retraining.
+- **Standalone Portability**: Designed to be compiled into a single executable that can run in totally air-gapped environments.
+
+### How Image Masking Works
+DocShield leverages the fact that `.docx` files are essentially ZIP archives. When enabled, it:
+1. Silently unzips the document and extracts all images.
+2. Runs **EasyOCR** to identify text strings and their physical coordinates within the diagrams.
+3. Passes the extracted text through the standard detection pipeline.
+4. Physically draws white redaction boxes over the sensitive pixels and stamps the encrypted token.
+5. Saves the pristine, original images into a secure `images.zip` backup file in your vault, and re-zips the document.
+
+**⚠️ Cons to consider before enabling:**
+- **Processing Speed**: Running local OCR on high-resolution diagrams is computationally heavy and will slow down the anonymization process.
+- **OCR Limitations**: Diagrams with tiny, rotated, or highly distorted text might not be read correctly by the OCR engine, meaning some strings could escape detection.
+
 ## Features & Detection Stack
 
 DocShield uses a modular, plug-and-play detection stack:
