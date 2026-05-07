@@ -17,8 +17,17 @@ class ImageMasker:
             
         try:
             import easyocr
+            
+            # Support portable model paths
+            model_path = Path("models/easyocr")
+            if not model_path.exists():
+                # Fallback to home dir
+                model_path = None
+            else:
+                logger.info(f"Using local OCR models from {model_path}")
+
             # Initialize with English, disable GPU by default to ensure portability
-            self.reader = easyocr.Reader(['en'], gpu=False, verbose=False)
+            self.reader = easyocr.Reader(['en'], gpu=False, verbose=False, model_storage_directory=str(model_path) if model_path else None)
             self._initialized = True
             return True
         except ImportError:

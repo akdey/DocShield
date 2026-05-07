@@ -126,12 +126,19 @@ uv run docshield s report.docx
 ### Manual Anonymization
 If you prefer to manage your own passphrases or need to process a single file with a specific name.
 ```bash
-# Using shorthands and -k for key
+# Standard
+uv run docshield anonymize report.docx --output masked.docx --key "my-secret-passphrase"
+
+# Shorthand (using a and -k)
 uv run docshield a report.docx -o masked.docx -k "my-secret-passphrase"
 ```
 
 ### Manual De-anonymization
 ```bash
+# Standard
+uv run docshield deanonymize masked.docx --output recovered.docx --key "my-secret-passphrase"
+
+# Shorthand
 uv run docshield d masked.docx -o recovered.docx -k "my-secret-passphrase"
 ```
 
@@ -191,8 +198,13 @@ You can package DocShield into a portable, standalone executable (e.g., `.exe` f
    ├── docshield.exe
    └── models/
        ├── gliner_model/     <-- Put your downloaded Hugging Face files here
-       └── spacy_model/      <-- Extract the SpaCy .tar.gz files in here
+       ├── spacy_model/      <-- Extract the SpaCy .tar.gz files in here
+       └── easyocr/          <-- Put .zip or .pth files from EasyOCR here
    ```
+
+> [!NOTE]
+> **Where to get OCR models?**
+> EasyOCR models (detection and recognition) can be downloaded from the [EasyOCR Releases page](https://github.com/JaidedAI/EasyOCR/releases). For English, you typically need `english_g2.zip` and `craft_mlt_25k.zip`. Drop the files directly into `models/easyocr/`.
 
 You can now zip the `dist/docshield/` folder and share it. Anyone can extract it and run `docshield.exe` immediately without Admin rights or internet access!
 

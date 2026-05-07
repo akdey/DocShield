@@ -40,6 +40,15 @@ console = Console()
 # Global state for verbose mode
 state = {"verbose": False}
 
+def set_verbose(enabled: bool):
+    """Enable developer mode logging if requested."""
+    if enabled:
+        state["verbose"] = True
+        logging.getLogger().setLevel(logging.DEBUG)
+        for logger_name in ["transformers", "huggingface_hub", "presidio-analyzer", "spacy", "easyocr", "gliner"]:
+            logging.getLogger(logger_name).setLevel(logging.DEBUG)
+        console.print("[dim]Developer Mode: Verbose logging enabled.[/dim]")
+
 @app.callback()
 def main(
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable developer mode (show all library logs)")
@@ -47,12 +56,7 @@ def main(
     """
     DocShield CLI - Secure, offline document anonymization.
     """
-    if verbose:
-        state["verbose"] = True
-        logging.getLogger().setLevel(logging.DEBUG)
-        for logger_name in ["transformers", "huggingface_hub", "presidio-analyzer", "spacy", "easyocr", "gliner"]:
-            logging.getLogger(logger_name).setLevel(logging.DEBUG)
-        console.print("[dim]Developer Mode: Verbose logging enabled.[/dim]")
+    set_verbose(verbose)
 
 @contextlib.contextmanager
 def silence_stderr():
@@ -96,9 +100,11 @@ def resolve_vault_key(key: str = None, session_key_path: Path = None) -> str:
 @app.command("s", hidden=True)
 def scan(
     file_path: Path = typer.Argument(..., help="Path to the document to scan"),
-    key: str = typer.Option(None, "--key", "-k", help="Optional key (for future-proofing/consistency)")
+    key: str = typer.Option(None, "--key", "-k", help="Optional key (for future-proofing/consistency)"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable developer mode")
 ):
     """Scan a document for PII and business entities [bold]without[/bold] masking."""
+    set_verbose(verbose)
     if not file_path.exists():
         console.print(f"[bold red]Error:[/bold red] File {file_path} not found")
         raise typer.Exit(1)
@@ -141,9 +147,11 @@ def anonymize(
     inputs: list[Path] = typer.Argument(..., help="Path to input document(s) or folder"),
     output: Path = typer.Option(None, "--output", "-o", help="Output path (only for single files)"),
     session: str = typer.Option(None, "--session", "-s", help="Session name (e.g. 'project-x')"),
-    key: str = typer.Option(None, "--key", "-k", help="Legacy encryption key")
+    key: str = typer.Option(None, "--key", "-k", help="Legacy encryption key"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable developer mode")
 ):
     """Detect and mask sensitive data. [bold cyan]Supports single files, globs, or folders.[/bold cyan]"""
+    set_verbose(verbose)
     # Resolve all files
     files = []
     for p in inputs:
@@ -239,9 +247,11 @@ def deanonymize(
     input_path: Path = typer.Argument(..., help="Path to masked document or session folder"),
     output: Path = typer.Option(None, "--output", "-o", help="Output path (optional)"),
     session: str = typer.Option(None, "--session", "-s", help="Session name if key is separate"),
-    key: str = typer.Option(None, "--key", "-k", help="Legacy encryption key")
+    key: str = typer.Option(None, "--key", "-k", help="Legacy encryption key"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable developer mode")
 ):
     """Recover original content from masked documents."""
+    set_verbose(verbose)
     if not input_path.exists():
         console.print("[bold red]Error:[/bold red] Input path not found")
         raise typer.Exit(1)
