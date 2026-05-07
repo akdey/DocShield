@@ -1,10 +1,15 @@
 import typer
 import logging
 import warnings
+import sys
+import contextlib
 from pathlib import Path
 from rich.console import Console
 from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
+from rich.panel import Panel
+from rich.text import Text
+from rich import box
 import os
 
 # Suppress noisy library logs by default
@@ -31,6 +36,18 @@ app = typer.Typer(
     no_args_is_help=True
 )
 console = Console()
+
+@contextlib.contextmanager
+def silence_stderr():
+    """Redirect stderr to devnull to hide unsuppressible library warnings."""
+    new_target = open(os.devnull, "w")
+    old_target = sys.stderr
+    sys.stderr = new_target
+    try:
+        yield new_target
+    finally:
+        sys.stderr = old_target
+        new_target.close()
 
 def resolve_vault_key(key: str = None, session_key_path: Path = None) -> str:
     # 1. Session Key File (Highest Priority for Auto-Mode)
@@ -72,14 +89,15 @@ def scan(
             status.update(f"[bold blue]{msg}[/bold blue]")
             
         doc = parser.read(file_path)
-        ds = DocShield(key="dummy") # Key not needed for scan
-        spans = ds.scan(doc.text, status_callback=update_status)
+        with silence_stderr():
+            ds = DocShield(key="dummy") # Key not needed for scan
+            spans = ds.scan(doc.text, status_callback=update_status)
         
     if not spans:
-        console.print(f"[yellow]No sensitive entities found in {file_path.name}.[/yellow]")
+        console.print(f"\n[bold yellow]No sensitive entities found in {file_path.name}.[/bold yellow]")
         return
 
-    table = Table(title=f"Detection Report: {file_path.name}", box=None, header_style="bold magenta")
+    table = Table(title=f"Detection Report: {file_path.name}", box=box.SIMPLE, header_style="bold magenta")
     table.add_column("Entity Type", style="cyan")
     table.add_column("Text", style="white")
     table.add_column("Position", style="dim")
@@ -94,7 +112,7 @@ def scan(
         )
         
     console.print(table)
-    console.print(f"\n[bold green]✅ Found {len(spans)} sensitive entities.[/bold green]")
+    console.print(f"\n[bold green]✅ Found {len(spans)} sensitive entities.[/bold green]\n")
 
 @app.command("anonymize")
 @app.command("a", hidden=True)
@@ -123,7 +141,8 @@ def anonymize(
     if len(files) == 1 and output and not session and key:
         # Legacy Mode
         encryption_key = resolve_vault_key(key)
-        ds = DocShield(encryption_key)
+        with silence_stderr():
+            ds = DocShield(encryption_key)
         with console.status(f"[bold blue]Anonymizing {files[0].name}...[/bold blue]"):
             ds.anonymize_file(files[0], output)
         console.print(f"[bold green]Successfully masked:[/bold green] {files[0].name} [bold]→[/bold] {output}")
@@ -138,32 +157,60 @@ def anonymize(
     # Generate and save session key
     vault_path = SessionManager.create_session_vault(session_name, output_dir)
     encryption_key = SessionManager.load_session_key(vault_path)
-    ds = DocShield(encryption_key)
+    with silence_stderr():
+        ds = DocShield(encryption_key)
     
-    console.print(f"\n🚀 [bold cyan]Starting Anonymization Session:[/bold cyan] [reverse]{session_name}[/reverse]")
+    console.print(f"\n🚀 [bold cyan]Starting Anonymization Session:[/bold cyan] [reverse] {session_name} [/reverse]")
     console.print(f"📁 [bold]Destination:[/bold] {output_dir}")
     console.print(f"🔑 [bold]Vault Key:[/bold]   {vault_path.name}\n")
+
+    file_results = []
 
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
         BarColumn(bar_width=None),
         TaskProgressColumn(),
-        console=console
+        console=console,
+        expand=True
     ) as progress:
         task = progress.add_task("[blue]Processing documents...", total=len(files))
         for i, file_path in enumerate(files, 1):
             new_name = f"{session_name}_{i}{file_path.suffix}"
             dest = output_dir / new_name
             
+            steps = []
             def update_progress(msg):
-                progress.update(task, description=f"[blue]{file_path.name}[/blue]: [dim]{msg}[/dim]")
-                
-            ds.anonymize_file(file_path, dest, status_callback=update_progress)
+                steps.append(msg)
+                progress.update(task, description=f"[bold blue]{file_path.name}[/bold blue]: [dim]{msg}[/dim]")
+            
+            with silence_stderr():
+                count = ds.anonymize_file(file_path, dest, status_callback=update_progress)
+            file_results.append((file_path.name, count, steps))
             progress.advance(task)
             
-    console.print(f"\n[bold green]✅ Successfully processed {len(files)} files.[/bold green]")
-    console.print(f"Keep the [bold yellow]{session_name}.key[/bold yellow] file to de-anonymize this batch.\n")
+    # Final Summary Table
+    summary_table = Table(box=box.SIMPLE, header_style="bold cyan")
+    summary_table.add_column("File Name")
+    summary_table.add_column("Entities Masked", justify="right")
+    summary_table.add_column("Pipeline Steps", style="dim")
+    
+    for name, count, steps in file_results:
+        summary_table.add_row(name, str(count), " → ".join(steps))
+    
+    console.print("\n[bold green]Processing Complete![/bold green]")
+    console.print(summary_table)
+
+    # Attention-seeking key warning
+    warning_text = Text.assemble(
+        ("IMPORTANT: ", "bold red"),
+        "The file ", (f"{session_name}.key", "bold yellow"), 
+        " is the ", ("ONLY", "bold underline"), " way to recover your data.\n",
+        "If you lose this key, the original data is permanently lost. ",
+        ("Do not share it.", "bold red italic")
+    )
+    console.print(Panel(warning_text, title="[bold red]🔐 SECURITY VAULT KEY[/bold red]", border_style="red", expand=False))
+    console.print("")
 
 @app.command("deanonymize")
 @app.command("d", hidden=True)
@@ -193,7 +240,8 @@ def deanonymize(
             # Fallback to prompt/legacy
             encryption_key = resolve_vault_key()
 
-    ds = DocShield(encryption_key)
+    with silence_stderr():
+        ds = DocShield(encryption_key)
 
     # 2. Process Files
     files_to_process = []
@@ -206,25 +254,32 @@ def deanonymize(
 
     dest_dir.mkdir(exist_ok=True)
     
+    file_results = []
+
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
         BarColumn(bar_width=None),
         TaskProgressColumn(),
-        console=console
+        console=console,
+        expand=True
     ) as progress:
         task = progress.add_task("[magenta]Restoring originals...", total=len(files_to_process))
         for f in files_to_process:
             out_name = output or f"restored_{f.name}"
             target = dest_dir / out_name
             
+            steps = []
             def update_progress(msg):
-                progress.update(task, description=f"[magenta]{f.name}[/magenta]: [dim]{msg}[/dim]")
+                steps.append(msg)
+                progress.update(task, description=f"[bold magenta]{f.name}[/bold magenta]: [dim]{msg}[/dim]")
                 
-            ds.deanonymize_file(f, target, status_callback=update_progress)
+            with silence_stderr():
+                ds.deanonymize_file(f, target, status_callback=update_progress)
+            file_results.append((f.name, steps))
             progress.advance(task)
         
-    console.print(f"\n[bold green]✅ Successfully deanonymized {len(files_to_process)} file(s).[/bold green]")
+    console.print(f"\n[bold green]✅ Restoration Complete![/bold green]")
     console.print(f"Restored files saved in: [bold blue]{dest_dir}[/bold blue]\n")
 
 @app.command()
