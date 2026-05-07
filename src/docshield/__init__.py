@@ -41,17 +41,18 @@ class DocShield:
         
         print("\nNote: GLiNER models will be downloaded automatically upon first use.")
 
-    def scan(self, text: str) -> list[EntitySpan]:
+    def scan(self, text: str, status_callback: callable = None) -> list[EntitySpan]:
         """
         Scan text for sensitive entities.
         
         Args:
             text (str): The text to scan.
+            status_callback (callable): Optional callback for progress updates.
             
         Returns:
             list[EntitySpan]: A list of detected entity spans.
         """
-        return self.pipeline.run(text)
+        return self.pipeline.run(text, status_callback=status_callback)
 
     def anonymize(self, text: str) -> str:
         """
@@ -78,13 +79,14 @@ class DocShield:
         """
         return self.deanonymizer.deanonymize(text)
 
-    def anonymize_file(self, input_path: str | Path, output_path: str | Path) -> int:
+    def anonymize_file(self, input_path: str | Path, output_path: str | Path, status_callback: callable = None) -> int:
         """
         Read a file, anonymize its contents, and save to a new file.
         
         Args:
             input_path (str | Path): Path to the original document.
             output_path (str | Path): Path to save the masked document.
+            status_callback (callable): Optional callback for progress updates.
             
         Returns:
             int: The number of entities masked.
@@ -93,8 +95,12 @@ class DocShield:
         output_path = Path(output_path)
         parser = get_parser(input_path)
         
+        if status_callback: status_callback("Reading document...")
         doc = parser.read(input_path)
-        spans = self.scan(doc.text)
+        
+        spans = self.scan(doc.text, status_callback=status_callback)
+        
+        if status_callback: status_callback("Generating masked document...")
         masked_text, replacements = self.masker.mask_with_replacements(doc.text, spans)
         parser.write_masked(input_path, output_path, masked_text, replacements)
         
@@ -105,22 +111,25 @@ class DocShield:
             # If input was PDF, output is actually .docx
             final_output = output_path.with_suffix(".docx") if input_path.suffix.lower() == ".pdf" else output_path
             if final_output.suffix.lower() == ".docx":
+                if status_callback: status_callback("Redacting sensitive data in images...")
                 im.anonymize_docx_images(final_output, self, final_output.parent)
                 
         return len(spans)
 
-    def deanonymize_file(self, input_path: str | Path, output_path: str | Path) -> None:
+    def deanonymize_file(self, input_path: str | Path, output_path: str | Path, status_callback: callable = None) -> None:
         """
         Read a masked file, recover its original contents, and save to a new file.
         
         Args:
             input_path (str | Path): Path to the masked document.
             output_path (str | Path): Path to save the recovered document.
+            status_callback (callable): Optional callback for progress updates.
         """
         input_path = Path(input_path)
         output_path = Path(output_path)
         parser = get_parser(input_path)
         
+        if status_callback: status_callback("Decrypting document structure...")
         doc = parser.read(input_path)
         recovered_text, replacements = self.deanonymizer.deanonymize_with_replacements(doc.text)
         parser.write_masked(input_path, output_path, recovered_text, replacements)
@@ -130,6 +139,7 @@ class DocShield:
             from .image_masker import ImageMasker
             im = ImageMasker()
             if output_path.suffix.lower() == ".docx":
+                if status_callback: status_callback("Restoring original images from vault...")
                 im.deanonymize_docx_images(output_path, input_path.parent)
 
 __all__ = [

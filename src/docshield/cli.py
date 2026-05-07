@@ -54,7 +54,8 @@ def resolve_vault_key(key: str = None, session_key_path: Path = None) -> str:
     # 5. Prompt
     return typer.prompt("Enter encryption passphrase", hide_input=True)
 
-@app.command()
+@app.command("scan")
+@app.command("s", hidden=True)
 def scan(
     file_path: Path = typer.Argument(..., help="Path to the document to scan"),
     key: str = typer.Option(None, "--key", "-k", help="Optional key (for future-proofing/consistency)")
@@ -66,10 +67,13 @@ def scan(
         
     parser = get_parser(file_path)
     
-    with console.status(f"[bold blue]Analyzing {file_path.name}...[/bold blue]"):
+    with console.status(f"[bold blue]Analyzing {file_path.name}...[/bold blue]") as status:
+        def update_status(msg):
+            status.update(f"[bold blue]{msg}[/bold blue]")
+            
         doc = parser.read(file_path)
         ds = DocShield(key="dummy") # Key not needed for scan
-        spans = ds.scan(doc.text)
+        spans = ds.scan(doc.text, status_callback=update_status)
         
     if not spans:
         console.print(f"[yellow]No sensitive entities found in {file_path.name}.[/yellow]")
@@ -92,7 +96,8 @@ def scan(
     console.print(table)
     console.print(f"\n[bold green]✅ Found {len(spans)} sensitive entities.[/bold green]")
 
-@app.command()
+@app.command("anonymize")
+@app.command("a", hidden=True)
 def anonymize(
     inputs: list[Path] = typer.Argument(..., help="Path to input document(s) or folder"),
     output: Path = typer.Option(None, "--output", "-o", help="Output path (only for single files)"),
@@ -150,14 +155,18 @@ def anonymize(
         for i, file_path in enumerate(files, 1):
             new_name = f"{session_name}_{i}{file_path.suffix}"
             dest = output_dir / new_name
-            progress.update(task, description=f"[dim]Masking {file_path.name}...[/dim]")
-            ds.anonymize_file(file_path, dest)
+            
+            def update_progress(msg):
+                progress.update(task, description=f"[blue]{file_path.name}[/blue]: [dim]{msg}[/dim]")
+                
+            ds.anonymize_file(file_path, dest, status_callback=update_progress)
             progress.advance(task)
             
     console.print(f"\n[bold green]✅ Successfully processed {len(files)} files.[/bold green]")
     console.print(f"Keep the [bold yellow]{session_name}.key[/bold yellow] file to de-anonymize this batch.\n")
 
-@app.command()
+@app.command("deanonymize")
+@app.command("d", hidden=True)
 def deanonymize(
     input_path: Path = typer.Argument(..., help="Path to masked document or session folder"),
     output: Path = typer.Option(None, "--output", "-o", help="Output path (optional)"),
@@ -208,8 +217,11 @@ def deanonymize(
         for f in files_to_process:
             out_name = output or f"restored_{f.name}"
             target = dest_dir / out_name
-            progress.update(task, description=f"[dim]Decrypting {f.name}...[/dim]")
-            ds.deanonymize_file(f, target)
+            
+            def update_progress(msg):
+                progress.update(task, description=f"[magenta]{f.name}[/magenta]: [dim]{msg}[/dim]")
+                
+            ds.deanonymize_file(f, target, status_callback=update_progress)
             progress.advance(task)
         
     console.print(f"\n[bold green]✅ Successfully deanonymized {len(files_to_process)} file(s).[/bold green]")

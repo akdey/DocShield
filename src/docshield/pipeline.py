@@ -80,14 +80,20 @@ class DetectionPipeline:
         deduped.append(current)
         return deduped
 
-    def run(self, text: str) -> list[EntitySpan]:
+    def run(self, text: str, status_callback: callable = None) -> list[EntitySpan]:
         self._lazy_init()
         all_spans = []
         for detector in self.detectors:
+            detector_name = detector.__class__.__name__.replace("Detector", "")
+            if status_callback:
+                status_callback(f"Scanning with {detector_name}...")
+                
             try:
                 all_spans.extend(detector.detect(text))
             except Exception as e:
-                print(f"Detector {detector.__class__.__name__} failed: {e}")
+                # Use logging instead of print for internal errors
+                import logging
+                logging.getLogger("docshield").error(f"Detector {detector_name} failed: {e}")
                 
         # Apply denylist
         filtered_spans = [
