@@ -5,14 +5,13 @@ class Masker:
     def __init__(self, crypto: DocShieldCrypto):
         self.crypto = crypto
 
-    def mask(self, text: str, spans: list[EntitySpan]) -> str:
+    def mask_with_replacements(self, text: str, spans: list[EntitySpan]) -> tuple[str, list[tuple[int, int, str]]]:
         """
         NEW COMPACT MODE: Replaces detected spans with FPE-scrambled text.
-        Format: [T:scrambled] where T is a 1-letter type code.
-        This is much shorter and LLM-friendly.
+        Returns the masked text AND a list of (start, end, token) replacements.
         """
         if not spans:
-            return text
+            return text, []
             
         # 1-letter aliases for common types to keep it extremely short
         type_aliases = {
@@ -32,10 +31,12 @@ class Masker:
             "PROJECT_NAME": "J",
         }
 
-        # Sort backwards
+        # Sort backwards so replacement indices remain valid for string manipulation
         spans.sort(key=lambda s: s.start, reverse=True)
         
         masked_text = text
+        replacements = []
+        
         for span in spans:
             # FPE encrypt (same length, safe for LLMs)
             scrambled = self.crypto.fpe_encrypt(span.text)
@@ -44,8 +45,16 @@ class Masker:
             t = type_aliases.get(span.entity_type, span.entity_type)
             token = f"[{t}:{scrambled}]"
             
+            # We store the replacement info
+            replacements.append((span.start, span.end, token))
+            
             masked_text = masked_text[:span.start] + token + masked_text[span.end:]
             
+        return masked_text, replacements
+
+    def mask(self, text: str, spans: list[EntitySpan]) -> str:
+        """Backward compatible wrapper."""
+        masked_text, _ = self.mask_with_replacements(text, spans)
         return masked_text
 
     def mask_old(self, text: str, spans: list[EntitySpan]) -> str:

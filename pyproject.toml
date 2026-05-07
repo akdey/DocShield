@@ -18,6 +18,7 @@ requires-python = ">=3.11"
 dependencies = [
     "cryptography>=47.0.0",
     "flashtext>=2.7",
+    "fpdf2>=2.8.7",
     "gliner>=0.2.26",
     "loguru>=0.7.3",
     "pdfplumber>=0.11.9",

@@ -16,17 +16,23 @@ class PdfParser(BaseParser):
     def write_masked(self, original_path: Path, output_path: Path, text: str, replacements: list[tuple[int, int, str]]) -> None:
         """
         In-place redaction for PDFs is extremely difficult without exact coordinates.
-        For MVP, we write the masked text into a new clean PDF, or just a TXT file 
-        if we want to ensure no hidden data leaks. We'll generate a basic text PDF here 
-        or simply fall back to writing text.
-        
-        To create a basic PDF from text, we could use ReportLab, but to avoid more dependencies,
-        we will just output a TXT file instead for the masked version for now, or use a simple 
-        placeholder.
-        
-        Actually, let's output a .txt file by default if it's a PDF for maximum safety,
-        unless we have a PDF generation library. Let's just write TXT for now.
+        We generate a clean new PDF containing the masked text to ensure the file type matches
+        and no hidden metadata leaks. We preserve the basic paragraph structure.
         """
-        out_txt_path = output_path.with_suffix(".txt")
-        out_txt_path.parent.mkdir(parents=True, exist_ok=True)
-        out_txt_path.write_text(text, encoding="utf-8")
+        from fpdf import FPDF
+        
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("Helvetica", size=11)
+        
+        # Split text into lines to preserve some basic structure
+        for line in text.split("\n"):
+            # Ensure text is compatible with latin-1 (default fonts in FPDF)
+            safe_line = line.encode('latin-1', 'replace').decode('latin-1')
+            # Use multi_cell for wrapping text instead of cell
+            pdf.multi_cell(0, 5, text=safe_line)
+            
+        # Ensure output is a .pdf
+        out_pdf_path = output_path.with_suffix(".pdf")
+        out_pdf_path.parent.mkdir(parents=True, exist_ok=True)
+        pdf.output(str(out_pdf_path))

@@ -95,8 +95,8 @@ class DocShield:
         
         doc = parser.read(input_path)
         spans = self.scan(doc.text)
-        masked_text = self.masker.mask(doc.text, spans)
-        parser.write_masked(input_path, output_path, masked_text, [])
+        masked_text, replacements = self.masker.mask_with_replacements(doc.text, spans)
+        parser.write_masked(input_path, output_path, masked_text, replacements)
         return len(spans)
 
     def deanonymize_file(self, input_path: str | Path, output_path: str | Path) -> None:
@@ -112,8 +112,8 @@ class DocShield:
         parser = get_parser(input_path)
         
         doc = parser.read(input_path)
-        recovered_text = self.deanonymize(doc.text)
-        parser.write_masked(input_path, output_path, recovered_text, [])
+        recovered_text, replacements = self.deanonymizer.deanonymize_with_replacements(doc.text)
+        parser.write_masked(input_path, output_path, recovered_text, replacements)
 
 __all__ = [
     "DocShield",
